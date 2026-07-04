@@ -1,35 +1,34 @@
-import { google } from '@ai-sdk/google';
-import { streamText } from 'ai';
+export default async function handler(req, res) {
+  // 1. Mandatory CORS headers to allow your GitHub Pages site to talk to this API
+  res.setHeader('Access-Control-Allow-Origin', 'https://tsonsino.github.io');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-// Set the runtime to edge to completely bypass Vercel's 10-second timeout limit
-export const runtime = 'edge'; 
+  // 2. Handle the 'OPTIONS' preflight request sent by your browser
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
 
-export async function POST(req: Request) {
-  try {
-    const { messages, prompt } = await req.json();
+  // 3. Process the actual POST request from your frontend
+  if (req.method === 'POST') {
+    try {
+      const { prompt } = req.body;
 
-    // Dynamically capture the text whether it comes from a chat array or a single tool prompt
-    let finalPrompt = prompt;
-    if (messages && messages.length > 0) {
-      finalPrompt = messages[messages.length - 1].content;
+      // --- YOUR AI LOGIC GOES HERE ---
+      // Example: 
+      // const response = await callYourAIService(prompt);
+      // res.status(200).json({ result: response });
+      
+      // Temporary test response to verify connection:
+      res.status(200).json({ message: "Backend is connected and receiving prompts!" });
+
+    } catch (error) {
+      console.error("API Error:", error);
+      res.status(500).json({ error: "Failed to process request" });
     }
-
-    if (!finalPrompt) {
-      return new Response(JSON.stringify({ error: 'No prompt or messages provided' }), { status: 400 });
-    }
-
-    // Stream the response token-by-token back to the browser
-    const result = await streamText({
-      model: google('gemini-1.5-flash'), 
-      prompt: finalPrompt,
-    });
-
-    return result.toDataStreamResponse();
-  } catch (error) {
-    console.error("Backend Error:", error);
-    return new Response(JSON.stringify({ error: 'Streaming execution failed' }), { 
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+  } else {
+    // 4. Handle any other HTTP methods (GET, PUT, etc.)
+    res.status(405).json({ message: 'Method not allowed' });
   }
 }
